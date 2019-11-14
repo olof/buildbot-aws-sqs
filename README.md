@@ -42,24 +42,41 @@ BuilderMasterConfig['schedulers'] = [
 BuilderMasterConfig['builders'] = [
     util.BuilderConfig(
         name='build_model_assets',
-	...
+    ...
     )
 ]
 
 ...
 ```
 
-Optionally, subclass the SQSSource class to add queue specific
-handling, e.g. message deserialisation and unpacking.
+There's also a SQSJsonSource which assumes that all messages are
+JSON objects, and will set the change properties to that of the
+deserialized object; a message like `{"foo": "bar"}` would thus
+generate a change with a "foo" property that you can interpolate
+in triggered builds.
 
 ```python
-class MyQueueSource(SQSSource):
-    def msg_properties(self, msg):
-        m = json.loads(msg)
+from buildbot_aws_sqs import SQSSource
 
-	# Let's say your message contains an "action" param
+BuilderMasterConfig['change_source'] = [
+    SQSJsonSource(
+        uri='https://eu-central-1.queue.amazonaws.com/999999999999/queue',
+        codebase='models',
+    ),
+]
+```
+
+Or, you can subclass the SQSSource (or SQSJsonSource) class to
+add queue specific handling, e.g. message deserialisation and
+unpacking.
+
+```python
+class MyCustomSource(SQSSource):
+    def msg_properties(self, msg):
+        # Messages consists of a single line "action <some action>"
+        m = re.match(r'^action (.*)', msg)
+        action = m.group(1) or 'default'
         return {
-            'sqs_body': msg,
-	    'action': m['action'],
+            'action': m.group(1) or 'default',
         }
 ```
