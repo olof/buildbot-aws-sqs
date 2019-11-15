@@ -22,7 +22,9 @@ class SQSPollingService(BuildbotService):
         It also, optionally, takes a pollinterval (seconds between polls).
         Defaults to 60. For cost estimate: free tier is one million requests
         per month. After that, it's $0.40/million requests. If we poll every
-        minute, we'll do about 44000 requests.
+        minute, we'll do about 44000 requests. (If we get a message, there's
+        an additonal delete_message request, but that is negliable under the
+        load i operate with.)
 
         We'll utilize "long polling", where we connect to SQS and leave the
         connection open in case new messages arrive. The AWS max timeout for
@@ -210,7 +212,7 @@ class SQSJsonSource(SQSSource):
 
     The sqs_body property will not be available.
     """
-    # maybe we should make it possible to still have the sqs_body prop?
-    # perhaps support for valiation using json schemas?
+    # * maybe we should make it possible to still have the sqs_body prop?
+    # * perhaps support for valiation using json schemas?
     def msg_properties(self, msg):
         return json.loads(msg)
