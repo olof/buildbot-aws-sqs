@@ -12,6 +12,7 @@ from twisted.internet.task import Clock
 from twisted.python import threadpool
 from twisted.python.failure import Failure
 from twisted.trial import unittest
+from unittest.mock import Mock
 from buildbot.util.eventual import _setReactor
 
 import buildbot_aws_sqs
@@ -163,6 +164,7 @@ class DummySQS:
     def __init__(self, **kwargs):
         self.kwargs = kwargs
         self.queue = []
+        self.delete_message = Mock()
 
     def mock_put_msg(self, msgid, msg, timestamp=None):
         self.queue.append({
@@ -187,6 +189,18 @@ class DummyBoto:
     def client(service, **kwargs):
         assert service == 'sqs'
         return DummySQS(**kwargs)
+
+class DummyPool:
+    def do(self, cb):
+        return defer.succeed(cb(Mock()))
+
+class DummyDB:
+    def __init__(self):
+        self.pool = DummyPool()
+
+class DummyParent:
+    master = Mock()
+    master.db = DummyDB()
 
 SQSSource = buildbot_aws_sqs.SQSSource
 buildbot_aws_sqs.boto3 = DummyBoto
