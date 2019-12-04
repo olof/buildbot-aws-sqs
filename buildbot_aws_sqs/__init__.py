@@ -236,7 +236,9 @@ class SQSJsonSource(SQSSource):
         msg['Body'] = json.loads(msg['Body'])
         return msg
 
-    # * maybe we should make it possible to still have the sqs_body prop?
     # * perhaps support for valiation using json schemas?
     def msg_properties(self, msg):
-        return msg['Body']
+        return {
+            'sqs_body': json.dumps(msg['Body']),
+            **msg['Body']
+        }
