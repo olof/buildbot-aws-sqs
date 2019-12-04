@@ -149,6 +149,9 @@ class SQSSource(SQSPollingService, ComparableMixin):
     compare_attrs = ('uri', 'pollinterval')
     name = 'SQSSource'
 
+    def process_msg(self, msg):
+        return msg
+
     def msg_project(self, msg):
         return None
 
@@ -205,6 +208,8 @@ class SQSSource(SQSPollingService, ComparableMixin):
         if msg is None:
             return defer.succeed(None)
 
+        msg = self.process_msg(msg)
+
         payload = self.msg_to_change(msg)
         revision = payload['revision']
         d = self.master.db.pool.do(lambda c: self.change_exists(c, revision))
@@ -227,7 +232,11 @@ class SQSJsonSource(SQSSource):
 
     The sqs_body property will not be available.
     """
+    def process_msg(self, msg):
+        msg['Body'] = json.loads(msg['Body'])
+        return msg
+
     # * maybe we should make it possible to still have the sqs_body prop?
     # * perhaps support for valiation using json schemas?
     def msg_properties(self, msg):
-        return json.loads(msg)
+        return msg['Body']
