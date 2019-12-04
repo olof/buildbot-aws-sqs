@@ -192,14 +192,29 @@ class SQSSource(SQSPollingService, ComparableMixin):
             'properties': self.msg_properties(msg),
         }
 
+    def get_change(self, conn, revision):
+        changes = self.master.db.model.changes
+        return conn.execute(
+            changes.select(whereclause=(changes.c.revision == revision))
+        ).fetchone()
+
+    def change_exists(self, conn, revision):
+        return bool(self.get_change(conn, revision))
+
     def handleMessage(self, msg):
-        d = defer.succeed(None)
+        if msg is None:
+            return defer.succeed(None)
+
+        payload = self.msg_to_change(msg)
+        revision = payload['revision']
+        d = self.master.db.pool.do(lambda c: self.change_exists(c, revision))
 
         @d.addCallback
-        def add_change(_):
-            if msg is None:
-                return
-            return self.master.data.updates.addChange(**self.msg_to_change(msg))
+        def add_change(exists):
+            # If we already know about the change, don't do anything.
+            if exists:
+                return defer.succeed(None)
+            return self.master.data.updates.addChange(**payload)
 
         return d
 

@@ -249,6 +249,28 @@ class TestSQSSource(TestReactorMixin, unittest.TestCase):
         resp = src.sqs_poll()
         self.assertEqual(resp.result['Body'], msg)
 
+    def test_poll_dupe(self):
+        src = SQSSource(uri=self.sqs_uri)
+        src.parent = DummyParent()
+        msg = '{"foo": "bar"}'
+
+        # first message
+        # should trigger handle_message, delete_message
+        src.sqs.mock_put_msg(msgid='aaaa', msg=msg)
+        src.change_exists = lambda self, rev: False
+
+        resp1 = src.poll()
+        self.assertEqual(src.sqs.delete_message.call_count, 1)
+        self.assertEqual(src.master.data.updates.addChange.call_count, 1)
+
+        # second message (same message again)
+        # should trigger delete_message but not handle_message
+        src.sqs.mock_put_msg(msgid='aaaa', msg=msg)
+        src.change_exists = lambda self, rev: True
+        resp2 = src.poll()
+        self.assertEqual(src.sqs.delete_message.call_count, 2)
+        self.assertEqual(src.master.data.updates.addChange.call_count, 1)
+
     #def test_describe(self):
     #    src = SQSSource(queue_url=self.sqs_uri)
     #
