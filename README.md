@@ -74,7 +74,7 @@ unpacking.
 class MyCustomSource(SQSSource):
     def msg_properties(self, msg):
         # Messages consists of a single line "action <some action>"
-        m = re.match(r'^action (.*)', msg)
+        m = re.match(r'^action (.*)', msg['Body'])
         action = m.group(1) or 'default'
         return {
             'action': m.group(1) or 'default',
