@@ -168,7 +168,7 @@ class DummySQS:
         self.queue.append({
             'MessageId': msgid,
             'Attributes': {
-                'SentTimeStamp': timestamp or int(time.time() * 1000),
+                'SentTimestamp': timestamp or int(time.time() * 1000),
             },
             'ReceiptHandle': 'recipethandle',
             'MD5OfBody': md5(bytes(msg, 'utf-8')).hexdigest(),
