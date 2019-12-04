@@ -166,7 +166,7 @@ class DummySQS:
 
     def mock_put_msg(self, msgid, msg, timestamp=None):
         self.queue.append({
-            #'MessageId' msgid,
+            'MessageId': msgid,
             'Attributes': {
                 'SentTimeStamp': timestamp or int(time.time() * 1000),
             },
