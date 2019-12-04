@@ -80,3 +80,11 @@ class MyCustomSource(SQSSource):
             'action': m.group(1) or 'default',
         }
 ```
+
+or, just replace some specific change attributes:
+
+```python
+class MyCustomSource(SQSJsonSource):
+    def msg_comment(self, msg):
+        return 'message from %s' % msg['Body']['sender']
+```
