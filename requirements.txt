@@ -1,3 +1,4 @@
 buildbot>=2.5.0
 twisted
 boto3
+botocore

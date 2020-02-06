@@ -12,8 +12,10 @@ from twisted.internet.task import Clock
 from twisted.python import threadpool
 from twisted.python.failure import Failure
 from twisted.trial import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 from buildbot.util.eventual import _setReactor
+
+import botocore.exceptions
 
 import buildbot_aws_sqs
 
@@ -177,10 +179,15 @@ class DummySQS:
             'Body': msg,
         })
 
+    def mock_put_failure(self, exc):
+        self.queue.append(exc)
+
     def receive_message(self, **kwargs):
         if not self.queue:
             return {}
         m = self.queue.pop(0)
+        if isinstance(m, botocore.exceptions.BotoCoreError):
+            raise m
         return {
             'Messages': [m],
         }
@@ -209,9 +216,6 @@ class TestSQSSource(TestReactorMixin, unittest.TestCase):
     def setUp(self):
         self.sqs_uri = 'http://sqs.example.com/queue'
         self.setUpTestReactor()
-
-    def setup_mock_source(self):
-        SQSSource(uri=self.sqs_uri)
 
     def test_attr_poll_uri(self):
         src = SQSSource(uri=self.sqs_uri)
@@ -248,6 +252,17 @@ class TestSQSSource(TestReactorMixin, unittest.TestCase):
         src.sqs.mock_put_msg(msgid='aaaa', msg=msg)
         resp = src.sqs_poll()
         self.assertEqual(resp.result['Body'], msg)
+
+    @patch('buildbot_aws_sqs.log')
+    def test_fail_credential_retrieve(self, mocklog):
+        src = SQSSource(uri=self.sqs_uri)
+        src.sqs.mock_put_failure(botocore.exceptions.CredentialRetrievalError(
+            provider='FailingMockProvider',
+            error_msg='this error is part of the tests',
+        ))
+        resp = src.sqs_poll()
+        self.assertEqual(resp.result, None)
+        mocklog.err.assert_called_once()
 
     def test_poll_dupe(self):
         src = SQSSource(uri=self.sqs_uri)

@@ -1,4 +1,5 @@
 import boto3
+import botocore.exceptions
 from zope.interface import implementer
 from twisted.internet import defer, threads
 from twisted.application.internet import TimerService
@@ -53,16 +54,21 @@ class SQSPollingService(BuildbotService):
         return super().stopService()
 
     def _get_sqs_msg(self):
-        return self.sqs.receive_message(
-            QueueUrl=self.uri,
-            AttributeNames=['SentTimestamp'],
-            WaitTimeSeconds=20,
-        )
+        try:
+            return self.sqs.receive_message(
+                QueueUrl=self.uri,
+                AttributeNames=['SentTimestamp'],
+                WaitTimeSeconds=20,
+            )
+        except botocore.exceptions.CredentialRetrievalError as exc:
+            log.err("botocore failed to get credentials "
+                    "(better luck next time): %s" % exc)
 
     def is_empty(self, resp):
         # In practice, "no messages avilable" will get you a response
         # *without* a Messages key. Out of caution, we also handle the
-        # Messages key being an empty list.
+        # Messages key being an empty list. In case of failure, it may
+        # be None.
         # {
         #   'ResponseMetadata': {
         #     'RequestId': '19999999-7999-5999-8999-a99999999999',
@@ -76,7 +82,7 @@ class SQSPollingService(BuildbotService):
         #     'RetryAttempts': 0
         #   }
         # }
-        return 'Messages' not in resp or not resp['Messages']
+        return resp is None or 'Messages' not in resp or not resp['Messages']
 
     @defer.inlineCallbacks
     def sqs_poll(self):

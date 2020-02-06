@@ -11,6 +11,7 @@ setup(
         'buildbot>=2.5.0',
         'twisted',
         'boto3',
+        'botocore',
     ],
     entry_points = {
         'buildbot.changes': [
