@@ -3,7 +3,7 @@ import botocore.exceptions
 from zope.interface import implementer
 from twisted.internet import defer, threads
 from twisted.application.internet import TimerService
-from twisted.python import log
+from twisted.logger import Logger
 from buildbot.util import ComparableMixin
 from buildbot.util.service import BuildbotService
 from buildbot.interfaces import IChangeSource
@@ -15,6 +15,8 @@ class SQSPollingService(BuildbotService):
 
     Inspired by the MaildirService class from buildbot.util.service.
     """
+    log = Logger()
+
     def __init__(self, uri, pollinterval=60, codebase=None,
                  aws_region='eu-central-1', **kwargs):
         """
@@ -61,8 +63,10 @@ class SQSPollingService(BuildbotService):
                 WaitTimeSeconds=20,
             )
         except botocore.exceptions.CredentialRetrievalError as exc:
-            log.err("botocore failed to get credentials "
-                    "(better luck next time): %s" % exc)
+            self.log.error(
+                "botocore failed to get credentials (will try again): {exc}",
+                exc=exc
+            )
 
     def is_empty(self, resp):
         # In practice, "no messages avilable" will get you a response
@@ -89,10 +93,11 @@ class SQSPollingService(BuildbotService):
         resp = yield threads.deferToThread(self._get_sqs_msg)
 
         if self.is_empty(resp):
-            log.msg("Polled SQS %s, no items to process" % self.uri)
+            self.log.debug("Polled SQS {uri}, no items to process", uri=self.uri)
             defer.returnValue(None)
 
-        log.msg("Poll result SQS queue %s: %s" % (self.uri, resp))
+        self.log.info("Poll result SQS queue {uri}: {resp}",
+                      uri=self.uri, resp=resp)
 
         # Structure of a response with messages available:
         # {
