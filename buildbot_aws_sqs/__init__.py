@@ -86,13 +86,13 @@ class SQSPollingService(BuildbotService):
 
     @defer.inlineCallbacks
     def sqs_poll(self):
-        log.msg("Polling SQS queue %s" % self.uri)
         resp = yield threads.deferToThread(self._get_sqs_msg)
 
-        log.msg("Poll result SQS queue %s: %s" % (self.uri, resp))
-
         if self.is_empty(resp):
+            log.msg("Polled SQS %s, no items to process" % self.uri)
             defer.returnValue(None)
+
+        log.msg("Poll result SQS queue %s: %s" % (self.uri, resp))
 
         # Structure of a response with messages available:
         # {
