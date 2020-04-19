@@ -26,6 +26,7 @@ from buildbot_aws_sqs import SQSSource
 
 BuilderMasterConfig['change_source'] = [
     SQSSource(
+        name='my_cloud_queue',
         uri='https://eu-central-1.queue.amazonaws.com/999999999999/queue',
         codebase='models',
     ),
@@ -60,6 +61,7 @@ from buildbot_aws_sqs import SQSSource
 
 BuilderMasterConfig['change_source'] = [
     SQSJsonSource(
+        name='jasons_cloud_queue',
         uri='https://eu-central-1.queue.amazonaws.com/999999999999/queue',
         codebase='models',
     ),

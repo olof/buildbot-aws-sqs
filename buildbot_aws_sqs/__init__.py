@@ -18,7 +18,7 @@ class SQSPollingService(BuildbotService):
     """
     log = Logger()
 
-    def __init__(self, uri, pollinterval=60, codebase=None,
+    def __init__(self, name, uri, pollinterval=60, codebase=None,
                  aws_region='eu-central-1', **kwargs):
         """
         Takes an uri to the SQS queue.
@@ -39,7 +39,7 @@ class SQSPollingService(BuildbotService):
         requests/month. Having a higher default pollinterval value is a
         cautious choice, but can increase latency for some messages.
         """
-        super().__init__(**kwargs)
+        super().__init__(name=name, **kwargs)
         self.pollinterval = pollinterval
         self.uri = uri
         self.aws_region = aws_region
@@ -159,7 +159,6 @@ class SQSSource(SQSPollingService, ComparableMixin):
     Inspired by the MaildirSource class from buildbot.changes.mail.
     """
     compare_attrs = ('uri', 'pollinterval')
-    name = 'SQSSource'
 
     def process_msg(self, msg):
         return msg
