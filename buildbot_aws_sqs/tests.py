@@ -253,16 +253,16 @@ class TestSQSSource(TestReactorMixin, unittest.TestCase):
         resp = src.sqs_poll()
         self.assertEqual(resp.result['Body'], msg)
 
-    @patch('buildbot_aws_sqs.log')
-    def test_fail_credential_retrieve(self, mocklog):
+    def test_fail_credential_retrieve(self):
         src = SQSSource(uri=self.sqs_uri)
         src.sqs.mock_put_failure(botocore.exceptions.CredentialRetrievalError(
             provider='FailingMockProvider',
             error_msg='this error is part of the tests',
         ))
+        src.log = Mock()
         resp = src.sqs_poll()
         self.assertEqual(resp.result, None)
-        mocklog.err.assert_called_once()
+        src.log.error.assert_called_once()
 
     def test_poll_dupe(self):
         src = SQSSource(uri=self.sqs_uri)
