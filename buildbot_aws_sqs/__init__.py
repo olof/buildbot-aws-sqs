@@ -47,11 +47,14 @@ class SQSPollingService(BuildbotService):
         self.default_codebase = codebase
 
     def startService(self):
+        self.log.info("Starting SQS poller {name} for URI {uri} (every {i}s)",
+                      name=self.name, uri=self.uri, i=self.pollinterval)
         self.timerService = TimerService(self.pollinterval, self.poll)
         self.timerService.setServiceParent(self)
         return super().startService()
 
     def stopService(self):
+        self.log.info("Stopping SQS poller {name}", name=self.name)
         self.timerService.disownServiceParent()
         self.timerService = None
         return super().stopService()
