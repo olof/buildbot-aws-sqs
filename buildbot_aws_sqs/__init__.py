@@ -97,11 +97,12 @@ class SQSPollingService(BuildbotService):
         resp = yield threads.deferToThread(self._get_sqs_msg)
 
         if self.is_empty(resp):
-            self.log.debug("Polled SQS {uri}, no items to process", uri=self.uri)
+            self.log.debug("Polled SQS {name}, no items to process",
+                           name=self.name)
             defer.returnValue(None)
 
-        self.log.info("Poll result SQS queue {uri}: {resp}",
-                      uri=self.uri, resp=resp)
+        self.log.info("Poll result SQS queue {name}: {resp}",
+                      name=self.name, resp=resp)
 
         # Structure of a response with messages available:
         # {
