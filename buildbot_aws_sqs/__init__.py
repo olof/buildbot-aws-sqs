@@ -75,8 +75,8 @@ class SQSPollingService(BuildbotService):
     def is_empty(self, resp):
         # In practice, "no messages avilable" will get you a response
         # *without* a Messages key. Out of caution, we also handle the
-        # Messages key being an empty list. In case of failure, it may
-        # be None.
+        # Messages key being an empty list. In case of failure, resp
+        # may be None.
         # {
         #   'ResponseMetadata': {
         #     'RequestId': '19999999-7999-5999-8999-a99999999999',
@@ -123,7 +123,7 @@ class SQSPollingService(BuildbotService):
         #       'x-amzn-requestid': 'd9999999-b999-5999-b999-89999999999b',
         #       'date': 'Mon, 11 Nov 2019 13:12:00 GMT',
         #       'content-type': 'text/xml',
-        #       'content-length': '996'
+        #       'content-length': '53'
         #     },
         #     'RetryAttempts': 0
         #   }
