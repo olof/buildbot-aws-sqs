@@ -186,7 +186,7 @@ class DummySQS:
         if not self.queue:
             return {}
         m = self.queue.pop(0)
-        if isinstance(m, botocore.exceptions.BotoCoreError):
+        if isinstance(m, Exception):
             raise m
         return {
             'Messages': [m],
@@ -216,6 +216,20 @@ class TestSQSSource(TestReactorMixin, unittest.TestCase):
     def setUp(self):
         self.sqs_uri = 'http://sqs.example.com/queue'
         self.setUpTestReactor()
+
+    def client_error(self, msg,
+                     code='InternalError',
+                     operation_name='ReceiveMessage',
+                     http_code=500):
+        return botocore.exceptions.ClientError(
+            error_response={
+                'ResponseMetadata': {
+                    'HTTPStatusCode': http_code,
+                },
+                'Error': {'Code': code, 'Message': msg}
+            },
+            operation_name=operation_name,
+        )
 
     def test_attr_poll_uri(self):
         src = SQSSource('test', uri=self.sqs_uri)
@@ -263,6 +277,27 @@ class TestSQSSource(TestReactorMixin, unittest.TestCase):
             provider='FailingMockProvider',
             error_msg='this error is part of the tests',
         ))
+        src.log = Mock()
+        resp = src.sqs_poll()
+        self.assertEqual(resp.result, None)
+        src.log.error.assert_called_once()
+
+    def test_fail_client_error(self):
+        src = SQSSource('test', uri=self.sqs_uri)
+        src.sqs.mock_put_failure(self.client_error('error testing'))
+        src.log = Mock()
+        resp = src.sqs_poll()
+        self.assertEqual(resp.result, None)
+        src.log.error.assert_called_once()
+
+    def test_fail_client_error_bad_format(self):
+        src = SQSSource('test', uri=self.sqs_uri)
+        src.sqs.mock_put_failure(
+            botocore.exceptions.ClientError(
+                error_response={},
+                operation_name="ReceiveMessage",
+            )
+        )
         src.log = Mock()
         resp = src.sqs_poll()
         self.assertEqual(resp.result, None)

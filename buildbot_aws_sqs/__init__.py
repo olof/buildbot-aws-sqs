@@ -60,6 +60,10 @@ class SQSPollingService(BuildbotService):
         return super().stopService()
 
     def _get_sqs_msg(self):
+        def error(_fmt, *args, **kwargs):
+            self.log.error('sqs.receive_message (non-fatal): ' + _fmt,
+                           *args, **kwargs)
+
         try:
             return self.sqs.receive_message(
                 QueueUrl=self.uri,
@@ -67,10 +71,17 @@ class SQSPollingService(BuildbotService):
                 WaitTimeSeconds=20,
             )
         except botocore.exceptions.CredentialRetrievalError as exc:
-            self.log.error(
-                "botocore failed to get credentials (will try again): {exc}",
-                exc=exc
-            )
+            error("failed to get credentials: {exc}", exc=exc)
+        except botocore.exceptions.ClientError as exc:
+            if exc.response.get('Error', {}).get('Code') == 'InternalError':
+                err = exc.response['Error']
+                http = exc.response.get('ResponseMetadata', {})
+                error("unknown error, code {code}/http:{http}: {msg}",
+                      http=http.get('HTTPStatusCode', 'unknown'),
+                      code=err.get('Code', 'unknown'),
+                      msg=err.get('Message', 'no error message available'))
+            else:
+                error("unknown error: {exc}", exc=exc)
 
     def is_empty(self, resp):
         # In practice, "no messages avilable" will get you a response
