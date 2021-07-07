@@ -7,10 +7,6 @@ this disclaimer! My API design may very well be totally broken,
 so no stability guarantees. Also, I've hidden a cryptominer in
 the code somewhere! (Or did I?)**
 
-**The master branch of this repository may be rebased until this
-notice is removed. Let me know if this would be a problem for
-you.**
-
 This package adds support for AWS SQS based changesources to
 buildbot, in the form of the SQSSource class. For each message
 sent to a subscribed queue, a change is generated. By default,
