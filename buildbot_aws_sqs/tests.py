@@ -131,6 +131,16 @@ class TestSQSSource(TestReactorMixin, unittest.TestCase):
         self.assertEqual(resp.result, None)
         src.log.error.assert_called_once()
 
+    def test_fail_connection_closed(self):
+        src = SQSSource('test', uri=self.sqs_uri)
+        src.sqs.mock_put_failure(botocore.exceptions.ConnectionClosedError(
+            endpoint_url='https://cloud.example.com/sqs',
+        ))
+        src.log = Mock()
+        resp = src.sqs_poll()
+        self.assertEqual(resp.result, None)
+        src.log.error.assert_called_once()
+
     def test_fail_client_error(self):
         src = SQSSource('test', uri=self.sqs_uri)
         src.sqs.mock_put_failure(self.client_error('error testing'))

@@ -82,6 +82,8 @@ class SQSPollingService(BuildbotService):
                       msg=err.get('Message', 'no error message available'))
             else:
                 error("unknown error: {exc}", exc=exc)
+        except botocore.exceptions.ConnectionClosedError as exc:
+            error("connection unexpectedly closed: {exc}", exc=exc)
 
     def is_empty(self, resp):
         # In practice, "no messages avilable" will get you a response
